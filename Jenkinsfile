@@ -27,5 +27,10 @@ pipeline {
                 }
             }
         }
+        stage('DeployToContainerInK8s') {
+            steps {
+                sh 'kubectl apply -f k8s.yml'
+            }
+        }
     }
 }
