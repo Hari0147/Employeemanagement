@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management System</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <header>
+
+        <h1>Employee Management System</h1>
+
+    </header>
+
+    <div class="container">
+
+        <div class="card">
+
+            <h2>Add Employee</h2>
+
+            <form action="/add" method="POST">
+
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Employee Name"
+                    required>
+
+                <input
+                    type="text"
+                    name="department"
+                    placeholder="Department"
+                    required>
+
+                <input
+                    type="number"
+                    name="salary"
+                    placeholder="Salary"
+                    required>
+
+                <button type="submit">
+                    Add Employee
+                </button>
+
+            </form>
+
+        </div>
+
+        <div class="card">
+
+            <h2>Employee List</h2>
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Salary</th>
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for employee in employees %}
+
+                    <tr>
+
+                        <td>{{ employee.id }}</td>
+
+                        <td>{{ employee.name }}</td>
+
+                        <td>{{ employee.department }}</td>
+
+                        <td>₹ {{ employee.salary }}</td>
+
+                        <td>
+
+                            <a
+                                class="edit-btn"
+                                href="/edit/{{ employee.id }}">
+                                Edit
+                            </a>
+
+                            <a
+                                class="delete-btn"
+                                href="/delete/{{ employee.id }}"
+                                onclick="return confirm('Delete this employee?')">
+
+                                Delete
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+
+</html>
