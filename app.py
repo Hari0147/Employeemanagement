@@ -1,83 +1,121 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 
 app = Flask(__name__)
 
 DATABASE = "employee.db"
 
-def init_db():
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
 
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS employees(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        department TEXT,
-        salary INTEGER
-    )
+def get_connection():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    conn = get_connection()
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS employees(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            department TEXT NOT NULL,
+            salary INTEGER NOT NULL
+        )
     """)
 
     conn.commit()
     conn.close()
 
+
 init_db()
 
+
 @app.route("/")
-def home():
-    return "Employee Management API is Running"
+def index():
 
-@app.route("/employees", methods=["GET"])
-def get_employees():
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM employees")
-    rows = cursor.fetchall()
-
-    employees = []
-
-    for row in rows:
-        employees.append({
-            "id": row[0],
-            "name": row[1],
-            "department": row[2],
-            "salary": row[3]
-        })
-
+    conn = get_connection()
+    employees = conn.execute("SELECT * FROM employees").fetchall()
     conn.close()
 
-    return jsonify(employees)
+    return render_template("index.html", employees=employees)
 
-@app.route("/employees", methods=["POST"])
+
+@app.route("/add", methods=["POST"])
 def add_employee():
 
-    data = request.json
+    name = request.form["name"]
+    department = request.form["department"]
+    salary = request.form["salary"]
 
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+    conn = get_connection()
 
-    cursor.execute(
-        "INSERT INTO employees(name,department,salary) VALUES(?,?,?)",
-        (data["name"], data["department"], data["salary"])
+    conn.execute(
+        "INSERT INTO employees(name, department, salary) VALUES (?, ?, ?)",
+        (name, department, salary)
     )
 
     conn.commit()
     conn.close()
 
-    return jsonify({"message":"Employee Added Successfully"})
+    return redirect(url_for("index"))
 
-@app.route("/employees/<int:id>", methods=["DELETE"])
+
+@app.route("/delete/<int:id>")
 def delete_employee(id):
 
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
+    conn = get_connection()
 
-    cursor.execute("DELETE FROM employees WHERE id=?", (id,))
+    conn.execute(
+        "DELETE FROM employees WHERE id=?",
+        (id,)
+    )
+
     conn.commit()
     conn.close()
 
-    return jsonify({"message":"Employee Deleted"})
+    return redirect(url_for("index"))
+
+
+@app.route("/edit/<int:id>", methods=["GET", "POST"])
+def edit_employee(id):
+
+    conn = get_connection()
+
+    if request.method == "POST":
+
+        name = request.form["name"]
+        department = request.form["department"]
+        salary = request.form["salary"]
+
+        conn.execute(
+            """
+            UPDATE employees
+            SET name=?,
+                department=?,
+                salary=?
+            WHERE id=?
+            """,
+            (name, department, salary, id)
+        )
+
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for("index"))
+
+    employee = conn.execute(
+        "SELECT * FROM employees WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    conn.close()
+
+    return render_template(
+        "edit_employee.html",
+        employee=employee
+    )
+
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(debug=True)
